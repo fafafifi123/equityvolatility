@@ -1,0 +1,7 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Equity Volatility Lab,com.equityvol.core,BlackScholes,5,334,2,14,1,46,2,15,0,9
+Equity Volatility Lab,com.equityvol.core,ImpliedVolatilityCalculator,18,165,6,18,3,29,6,9,0,3
+Equity Volatility Lab,com.equityvol.core,NormalDistribution,0,70,0,2,0,7,0,3,0,2
+Equity Volatility Lab,com.equityvol.core,HistoricalVolatility,0,99,1,9,0,17,1,7,0,3
+Equity Volatility Lab,com.equityvol.core,ReturnCalculator,0,61,1,9,0,8,1,5,0,1
+Equity Volatility Lab,com.equityvol.model,OptionType,0,15,0,0,0,3,0,1,0,1

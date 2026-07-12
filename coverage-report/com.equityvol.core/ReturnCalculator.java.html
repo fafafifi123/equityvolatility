@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReturnCalculator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Equity Volatility Lab</a> &gt; <a href="index.source.html" class="el_package">com.equityvol.core</a> &gt; <span class="el_source">ReturnCalculator.java</span></div><h1>ReturnCalculator.java</h1><pre class="source lang-java linenums">package com.equityvol.core;
+
+/**
+ * Converts a series of prices into log returns, the standard input for
+ * realized-volatility estimation because they are additive across time
+ * and symmetric for gains/losses.
+ */
+public final class ReturnCalculator {
+
+    private ReturnCalculator() {
+    }
+
+    public static double[] logReturns(double[] prices) {
+<span class="pc bpc" id="L14" title="1 of 4 branches missed.">        if (prices == null || prices.length &lt; 2) {</span>
+<span class="fc" id="L15">            throw new IllegalArgumentException(&quot;At least two prices are required to compute a return&quot;);</span>
+        }
+<span class="fc" id="L17">        double[] returns = new double[prices.length - 1];</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        for (int i = 1; i &lt; prices.length; i++) {</span>
+<span class="fc bfc" id="L19" title="All 4 branches covered.">            if (prices[i - 1] &lt;= 0 || prices[i] &lt;= 0) {</span>
+<span class="fc" id="L20">                throw new IllegalArgumentException(&quot;Prices must be positive&quot;);</span>
+            }
+<span class="fc" id="L22">            returns[i - 1] = Math.log(prices[i] / prices[i - 1]);</span>
+        }
+<span class="fc" id="L24">        return returns;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

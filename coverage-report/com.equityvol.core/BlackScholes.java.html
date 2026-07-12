@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BlackScholes.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Equity Volatility Lab</a> &gt; <a href="index.source.html" class="el_package">com.equityvol.core</a> &gt; <span class="el_source">BlackScholes.java</span></div><h1>BlackScholes.java</h1><pre class="source lang-java linenums">package com.equityvol.core;
+
+import com.equityvol.model.OptionType;
+
+/**
+ * Black-Scholes-Merton pricing and Greeks for European options on a
+ * dividend/carry-adjusted underlying.
+ *
+ * &lt;p&gt;Inputs: spot {@code S}, strike {@code K}, time to expiry in years {@code T},
+ * continuously-compounded risk-free rate {@code r}, continuous dividend yield {@code q},
+ * and annualized volatility {@code sigma}.
+ */
+public final class BlackScholes {
+
+    private BlackScholes() {
+    }
+
+    public static double price(double s, double k, double t, double r, double q, double sigma, OptionType type) {
+<span class="fc" id="L19">        validateInputs(s, k, t, sigma);</span>
+<span class="fc" id="L20">        double d1 = d1(s, k, t, r, q, sigma);</span>
+<span class="fc" id="L21">        double d2 = d2(d1, t, sigma);</span>
+<span class="fc" id="L22">        double discountedSpot = s * Math.exp(-q * t);</span>
+<span class="fc" id="L23">        double discountedStrike = k * Math.exp(-r * t);</span>
+
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        if (type == OptionType.CALL) {</span>
+<span class="fc" id="L26">            return discountedSpot * NormalDistribution.cdf(d1) - discountedStrike * NormalDistribution.cdf(d2);</span>
+        }
+<span class="fc" id="L28">        return discountedStrike * NormalDistribution.cdf(-d2) - discountedSpot * NormalDistribution.cdf(-d1);</span>
+    }
+
+    public static double delta(double s, double k, double t, double r, double q, double sigma, OptionType type) {
+<span class="fc" id="L32">        validateInputs(s, k, t, sigma);</span>
+<span class="fc" id="L33">        double d1 = d1(s, k, t, r, q, sigma);</span>
+<span class="fc" id="L34">        double discountFactor = Math.exp(-q * t);</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (type == OptionType.CALL) {</span>
+<span class="fc" id="L36">            return discountFactor * NormalDistribution.cdf(d1);</span>
+        }
+<span class="fc" id="L38">        return discountFactor * (NormalDistribution.cdf(d1) - 1.0);</span>
+    }
+
+    /** Same value for calls and puts. */
+    public static double gamma(double s, double k, double t, double r, double q, double sigma) {
+<span class="fc" id="L43">        validateInputs(s, k, t, sigma);</span>
+<span class="fc" id="L44">        double d1 = d1(s, k, t, r, q, sigma);</span>
+<span class="fc" id="L45">        return Math.exp(-q * t) * NormalDistribution.pdf(d1) / (s * sigma * Math.sqrt(t));</span>
+    }
+
+    /** Same value for calls and puts. Sensitivity to a 1.0 (100%) change in volatility. */
+    public static double vega(double s, double k, double t, double r, double q, double sigma) {
+<span class="fc" id="L50">        validateInputs(s, k, t, sigma);</span>
+<span class="fc" id="L51">        double d1 = d1(s, k, t, r, q, sigma);</span>
+<span class="fc" id="L52">        return s * Math.exp(-q * t) * NormalDistribution.pdf(d1) * Math.sqrt(t);</span>
+    }
+
+    /** Annualized theta (time decay per year). */
+    public static double theta(double s, double k, double t, double r, double q, double sigma, OptionType type) {
+<span class="fc" id="L57">        validateInputs(s, k, t, sigma);</span>
+<span class="fc" id="L58">        double d1 = d1(s, k, t, r, q, sigma);</span>
+<span class="fc" id="L59">        double d2 = d2(d1, t, sigma);</span>
+<span class="fc" id="L60">        double discountedSpot = s * Math.exp(-q * t);</span>
+<span class="fc" id="L61">        double discountedStrike = k * Math.exp(-r * t);</span>
+<span class="fc" id="L62">        double decayTerm = -discountedSpot * NormalDistribution.pdf(d1) * sigma / (2 * Math.sqrt(t));</span>
+
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (type == OptionType.CALL) {</span>
+<span class="fc" id="L65">            return decayTerm - r * discountedStrike * NormalDistribution.cdf(d2)</span>
+<span class="fc" id="L66">                    + q * discountedSpot * NormalDistribution.cdf(d1);</span>
+        }
+<span class="fc" id="L68">        return decayTerm + r * discountedStrike * NormalDistribution.cdf(-d2)</span>
+<span class="fc" id="L69">                - q * discountedSpot * NormalDistribution.cdf(-d1);</span>
+    }
+
+    public static double rho(double s, double k, double t, double r, double q, double sigma, OptionType type) {
+<span class="fc" id="L73">        validateInputs(s, k, t, sigma);</span>
+<span class="fc" id="L74">        double d1 = d1(s, k, t, r, q, sigma);</span>
+<span class="fc" id="L75">        double d2 = d2(d1, t, sigma);</span>
+<span class="fc" id="L76">        double discountedStrike = k * Math.exp(-r * t);</span>
+
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (type == OptionType.CALL) {</span>
+<span class="fc" id="L79">            return t * discountedStrike * NormalDistribution.cdf(d2);</span>
+        }
+<span class="fc" id="L81">        return -t * discountedStrike * NormalDistribution.cdf(-d2);</span>
+    }
+
+    private static double d1(double s, double k, double t, double r, double q, double sigma) {
+<span class="fc" id="L85">        return (Math.log(s / k) + (r - q + 0.5 * sigma * sigma) * t) / (sigma * Math.sqrt(t));</span>
+    }
+
+    private static double d2(double d1, double t, double sigma) {
+<span class="fc" id="L89">        return d1 - sigma * Math.sqrt(t);</span>
+    }
+
+    private static void validateInputs(double s, double k, double t, double sigma) {
+<span class="pc bpc" id="L93" title="2 of 4 branches missed.">        if (s &lt;= 0 || k &lt;= 0) {</span>
+<span class="nc" id="L94">            throw new IllegalArgumentException(&quot;Spot and strike must be positive&quot;);</span>
+        }
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (t &lt;= 0) {</span>
+<span class="fc" id="L97">            throw new IllegalArgumentException(&quot;Time to expiry must be positive&quot;);</span>
+        }
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (sigma &lt;= 0) {</span>
+<span class="fc" id="L100">            throw new IllegalArgumentException(&quot;Volatility must be positive&quot;);</span>
+        }
+<span class="fc" id="L102">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

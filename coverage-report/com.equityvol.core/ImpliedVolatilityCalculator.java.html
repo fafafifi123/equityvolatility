@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ImpliedVolatilityCalculator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Equity Volatility Lab</a> &gt; <a href="index.source.html" class="el_package">com.equityvol.core</a> &gt; <span class="el_source">ImpliedVolatilityCalculator.java</span></div><h1>ImpliedVolatilityCalculator.java</h1><pre class="source lang-java linenums">package com.equityvol.core;
+
+import com.equityvol.model.OptionType;
+
+/**
+ * Solves for the volatility that reprices a European option to its observed
+ * market price (&quot;implied volatility&quot;).
+ *
+ * &lt;p&gt;Strategy: Newton-Raphson using Black-Scholes vega as the derivative,
+ * since it converges in a handful of iterations near the money. If a step
+ * would leave the search bracket (vega near zero, or the guess drifts
+ * non-positive — common deep in/out-of-the-money), it falls back to
+ * bisection on that iteration, which is slower but always converges given
+ * a valid bracket. This mirrors how production vol solvers are built:
+ * fast method first, robust method as a safety net.
+ */
+public final class ImpliedVolatilityCalculator {
+
+    private static final int MAX_ITERATIONS = 100;
+    private static final double PRICE_TOLERANCE = 1e-8;
+    private static final double MIN_VOLATILITY = 1e-6;
+    private static final double MAX_VOLATILITY = 5.0;
+
+    private ImpliedVolatilityCalculator() {
+    }
+
+    public static double solve(double marketPrice, double s, double k, double t, double r, double q, OptionType type) {
+<span class="fc" id="L28">        validateArbitrageBounds(marketPrice, s, k, t, r, q, type);</span>
+
+<span class="fc" id="L30">        double lowVol = MIN_VOLATILITY;</span>
+<span class="fc" id="L31">        double highVol = MAX_VOLATILITY;</span>
+<span class="fc" id="L32">        double sigma = initialGuess(s, k, t, r, q);</span>
+
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        for (int i = 0; i &lt; MAX_ITERATIONS; i++) {</span>
+<span class="fc" id="L35">            double price = BlackScholes.price(s, k, t, r, q, sigma, type);</span>
+<span class="fc" id="L36">            double diff = price - marketPrice;</span>
+
+<span class="fc bfc" id="L38" title="All 2 branches covered.">            if (Math.abs(diff) &lt; PRICE_TOLERANCE) {</span>
+<span class="fc" id="L39">                return sigma;</span>
+            }
+
+<span class="fc bfc" id="L42" title="All 2 branches covered.">            if (diff &gt; 0) {</span>
+<span class="fc" id="L43">                highVol = sigma;</span>
+            } else {
+<span class="fc" id="L45">                lowVol = sigma;</span>
+            }
+
+<span class="fc" id="L48">            double vega = BlackScholes.vega(s, k, t, r, q, sigma);</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">            double newtonStep = vega &gt; 1e-10 ? sigma - diff / vega : Double.NaN;</span>
+
+<span class="pc bpc" id="L51" title="3 of 6 branches missed.">            if (Double.isNaN(newtonStep) || newtonStep &lt;= lowVol || newtonStep &gt;= highVol) {</span>
+<span class="nc" id="L52">                sigma = 0.5 * (lowVol + highVol);</span>
+            } else {
+<span class="fc" id="L54">                sigma = newtonStep;</span>
+            }
+        }
+
+<span class="nc" id="L58">        throw new ArithmeticException(&quot;Implied volatility did not converge within &quot; + MAX_ITERATIONS + &quot; iterations&quot;);</span>
+    }
+
+    private static double initialGuess(double s, double k, double t, double r, double q) {
+<span class="fc" id="L62">        double forward = s * Math.exp((r - q) * t);</span>
+<span class="fc" id="L63">        double moneyness = Math.abs(Math.log(forward / k));</span>
+<span class="fc" id="L64">        return 0.2 + moneyness;</span>
+    }
+
+    private static void validateArbitrageBounds(double marketPrice, double s, double k, double t, double r, double q, OptionType type) {
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (marketPrice &lt;= 0) {</span>
+<span class="nc" id="L69">            throw new IllegalArgumentException(&quot;Market price must be positive&quot;);</span>
+        }
+<span class="fc" id="L71">        double discountedSpot = s * Math.exp(-q * t);</span>
+<span class="fc" id="L72">        double discountedStrike = k * Math.exp(-r * t);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        double intrinsicLowerBound = type == OptionType.CALL</span>
+<span class="fc" id="L74">                ? Math.max(0, discountedSpot - discountedStrike)</span>
+<span class="fc" id="L75">                : Math.max(0, discountedStrike - discountedSpot);</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        double upperBound = type == OptionType.CALL ? discountedSpot : discountedStrike;</span>
+
+<span class="fc bfc" id="L78" title="All 4 branches covered.">        if (marketPrice &lt; intrinsicLowerBound || marketPrice &gt; upperBound) {</span>
+<span class="fc" id="L79">            throw new IllegalArgumentException(</span>
+                    &quot;Market price &quot; + marketPrice + &quot; violates no-arbitrage bounds [&quot; + intrinsicLowerBound + &quot;, &quot; + upperBound + &quot;]&quot;);
+        }
+<span class="fc" id="L82">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

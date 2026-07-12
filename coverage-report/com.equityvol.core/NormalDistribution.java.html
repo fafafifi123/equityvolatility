@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NormalDistribution.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Equity Volatility Lab</a> &gt; <a href="index.source.html" class="el_package">com.equityvol.core</a> &gt; <span class="el_source">NormalDistribution.java</span></div><h1>NormalDistribution.java</h1><pre class="source lang-java linenums">package com.equityvol.core;
+
+/**
+ * Standard normal density and cumulative distribution, needed by Black-Scholes.
+ * The CDF uses the Abramowitz &amp;amp; Stegun 7.1.26 rational approximation
+ * (max error ~1.5e-7), which is accurate enough for option pricing without
+ * pulling in an external math library.
+ */
+final class NormalDistribution {
+
+    private static final double A1 = 0.254829592;
+    private static final double A2 = -0.284496736;
+    private static final double A3 = 1.421413741;
+    private static final double A4 = -1.453152027;
+    private static final double A5 = 1.061405429;
+    private static final double P = 0.3275911;
+
+    private NormalDistribution() {
+    }
+
+    static double pdf(double x) {
+<span class="fc" id="L22">        return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);</span>
+    }
+
+    static double cdf(double x) {
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        double sign = x &lt; 0 ? -1.0 : 1.0;</span>
+<span class="fc" id="L27">        double z = Math.abs(x) / Math.sqrt(2.0);</span>
+
+<span class="fc" id="L29">        double t = 1.0 / (1.0 + P * z);</span>
+<span class="fc" id="L30">        double poly = ((((A5 * t + A4) * t + A3) * t + A2) * t + A1) * t;</span>
+<span class="fc" id="L31">        double erf = 1.0 - poly * Math.exp(-z * z);</span>
+
+<span class="fc" id="L33">        return 0.5 * (1.0 + sign * erf);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
